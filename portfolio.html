@@ -1,0 +1,1214 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Vansh Gautam — AI Engineer</title>
+  <!-- KILL scroll restoration BEFORE anything else -->
+  <script>if (history.scrollRestoration) history.scrollRestoration = 'manual'; window.scrollTo(0, 0);</script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=JetBrains+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    html {
+      scroll-behavior: auto
+    }
+
+    /* prevent browser auto-scroll */
+    body {
+      background: #000;
+      color: #f0eeea;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      cursor: none;
+      height: 700vh;
+      /* scroll space */
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* CURSOR */
+    #cd {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      background: #f0eeea;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      mix-blend-mode: difference;
+    }
+
+    #cr {
+      position: fixed;
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: width .18s, height .18s;
+      mix-blend-mode: difference;
+    }
+
+    /* CANVAS — fixed, full viewport */
+    #c {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    /* GRAIN */
+    #gr {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 180px;
+      animation: gs .5s steps(1) infinite;
+    }
+
+    @keyframes gs {
+      0% {
+        background-position: 0 0
+      }
+
+      25% {
+        background-position: -35px 15px
+      }
+
+      75% {
+        background-position: 25px -20px
+      }
+    }
+
+    /* NAV */
+    #nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      padding: 1.8rem 4vw;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      opacity: 0;
+    }
+
+    .nl {
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .3em;
+      text-transform: uppercase;
+      color: #f0eeea;
+      text-decoration: none;
+    }
+
+    .ns {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .65rem;
+      color: rgba(255, 255, 255, .4);
+      letter-spacing: .12em;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .nd {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pd 2.5s infinite;
+    }
+
+    @keyframes pd {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .15
+      }
+    }
+
+    /* LOADER */
+    #lo {
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.4rem;
+    }
+
+    #ln-wrap {
+      display: flex;
+      gap: 0;
+      justify-content: center;
+      align-items: baseline;
+      font-size: clamp(1.4rem, 4vw, 2.4rem);
+      font-weight: 900;
+      letter-spacing: .35em;
+      text-transform: uppercase;
+      color: #f0eeea;
+      overflow: hidden;
+      min-height: 2.8rem;
+    }
+
+    .lchar {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(24px);
+    }
+
+    .lspace {
+      display: inline-block;
+      width: .4em;
+    }
+
+    .lsub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .65rem;
+      color: rgba(255, 255, 255, .25);
+      letter-spacing: .3em;
+      text-transform: uppercase;
+      opacity: 0;
+      margin-top: .2rem;
+    }
+
+    .lb {
+      width: min(280px, 58vw);
+      height: 1px;
+      background: rgba(255, 255, 255, .07);
+      overflow: hidden;
+      opacity: 0;
+    }
+
+    .lf {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #1d6fff, #f0eeea);
+    }
+
+    .lm {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .65rem;
+      color: rgba(255, 255, 255, .32);
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      opacity: 0;
+      min-height: 1.1rem;
+      text-align: center;
+    }
+
+    /* PROGRESS */
+    #pb {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 1px;
+      z-index: 60;
+      width: 0%;
+      background: linear-gradient(90deg, #1d6fff, #7c3aed);
+    }
+
+    /* NAV DOTS */
+    #dots {
+      position: fixed;
+      right: 2.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      opacity: 0;
+    }
+
+    .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, .2);
+      background: transparent;
+      transition: all .3s;
+      cursor: none;
+    }
+
+    .dot.on {
+      background: #f0eeea;
+      border-color: #f0eeea;
+    }
+
+    @media(max-width:700px) {
+      #dots {
+        display: none
+      }
+    }
+
+    /* SCROLL HINT */
+    #sh {
+      position: fixed;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      opacity: 0;
+    }
+
+    .sht {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .6rem;
+      color: rgba(255, 255, 255, .22);
+      letter-spacing: .3em;
+      text-transform: uppercase;
+    }
+
+    .shl {
+      width: 1px;
+      height: 36px;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, .25), transparent);
+      animation: sl 2s ease-in-out infinite;
+    }
+
+    @keyframes sl {
+      0% {
+        transform: scaleY(0);
+        transform-origin: top
+      }
+
+      50% {
+        transform: scaleY(1);
+        transform-origin: top
+      }
+
+      51% {
+        transform-origin: bottom
+      }
+
+      100% {
+        transform: scaleY(0);
+        transform-origin: bottom
+      }
+    }
+
+    /* ──────────────────────────
+   UI / CHAPTERS
+   All chapters are fixed overlays.
+   Text sits in bottom-left.
+   3D lives in right half of screen.
+────────────────────────── */
+    #ui {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .ch {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 5vw 8vh;
+      pointer-events: none;
+      /* Text max-width = 50% so 3D can own the right side */
+    }
+
+    .ch-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .68rem;
+      color: rgba(255, 255, 255, .32);
+      letter-spacing: .3em;
+      text-transform: uppercase;
+      margin-bottom: 1.4rem;
+    }
+
+    .ch-h {
+      font-size: clamp(2.8rem, 6.5vw, 8rem);
+      font-weight: 900;
+      line-height: .92;
+      letter-spacing: -.04em;
+      text-transform: uppercase;
+      color: #f0eeea;
+      max-width: 55vw;
+    }
+
+    .ch-h em {
+      font-style: normal;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(255, 255, 255, .18);
+    }
+
+    .ch-p {
+      font-size: clamp(.88rem, 1.4vw, 1.1rem);
+      color: rgba(255, 255, 255, .42);
+      line-height: 1.75;
+      max-width: 420px;
+      margin-top: 1.4rem;
+      font-weight: 300;
+    }
+
+    .ch-p strong {
+      color: rgba(255, 255, 255, .75);
+      font-weight: 500;
+    }
+
+    /* Work chapters — centered */
+    .wch {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 8vw;
+      pointer-events: none;
+    }
+
+    .wn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .65rem;
+      color: rgba(255, 255, 255, .2);
+      letter-spacing: .3em;
+      margin-bottom: .9rem;
+    }
+
+    .wc {
+      font-size: clamp(2.5rem, 5vw, 5.5rem);
+      font-weight: 900;
+      line-height: .95;
+      letter-spacing: -.03em;
+      color: #f0eeea;
+      margin-bottom: .4rem;
+    }
+
+    .wr {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .65rem;
+      color: rgba(255, 255, 255, .25);
+      letter-spacing: .18em;
+      margin-bottom: 1.8rem;
+    }
+
+    .ws {
+      font-size: clamp(.9rem, 1.5vw, 1.1rem);
+      color: rgba(255, 255, 255, .48);
+      line-height: 1.82;
+      max-width: 600px;
+      font-weight: 300;
+    }
+
+    .ws strong {
+      color: rgba(255, 255, 255, .8);
+      font-weight: 600;
+    }
+
+    .wm {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 2rem;
+      padding: 11px 22px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 100px;
+      background: rgba(255, 255, 255, .03);
+      backdrop-filter: blur(12px);
+    }
+
+    .mn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .ml {
+      font-size: .75rem;
+      color: rgba(255, 255, 255, .35);
+      line-height: 1.3;
+      text-align: left;
+    }
+
+    /* Proof */
+    .pch {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6vw;
+      pointer-events: none;
+    }
+
+    .pg {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 3vw;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    @media(max-width:700px) {
+      .pg {
+        grid-template-columns: repeat(2, 1fr)
+      }
+    }
+
+    .pc {
+      text-align: center;
+    }
+
+    .pb2 {
+      font-size: clamp(2.8rem, 6vw, 6.5rem);
+      font-weight: 900;
+      letter-spacing: -.04em;
+      line-height: 1;
+      color: #f0eeea;
+    }
+
+    .pd {
+      font-size: .72rem;
+      color: rgba(255, 255, 255, .28);
+      margin-top: .6rem;
+      line-height: 1.4;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* CTA */
+    .ctach {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 6vw;
+      pointer-events: none;
+    }
+
+    .ctah {
+      font-size: clamp(3rem, 9vw, 10rem);
+      font-weight: 900;
+      line-height: .88;
+      letter-spacing: -.04em;
+      text-transform: uppercase;
+      color: #f0eeea;
+      margin-bottom: 2rem;
+    }
+
+    .ctah em {
+      font-style: normal;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(255, 255, 255, .15);
+    }
+
+    .ctas {
+      font-size: .95rem;
+      color: rgba(255, 255, 255, .32);
+      max-width: 350px;
+      line-height: 1.7;
+      margin: 0 auto 2.5rem;
+      font-weight: 300;
+    }
+
+    .ctabtns {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      pointer-events: auto;
+    }
+
+    .bs {
+      padding: 13px 30px;
+      border-radius: 3px;
+      background: #f0eeea;
+      color: #000;
+      font-size: .78rem;
+      font-weight: 900;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all .25s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .bs:hover {
+      background: #1d6fff;
+      color: #fff;
+    }
+
+    .bg {
+      padding: 13px 30px;
+      border-radius: 3px;
+      border: 1px solid rgba(255, 255, 255, .15);
+      color: rgba(255, 255, 255, .5);
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all .25s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .bg:hover {
+      border-color: rgba(255, 255, 255, .4);
+      color: #f0eeea;
+    }
+
+    .cfoot {
+      margin-top: 3rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .6rem;
+      color: rgba(255, 255, 255, .12);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="gr"></div>
+  <div id="cd"></div>
+  <div id="cr"></div>
+  <div id="pb"></div>
+
+  <!-- LOADER -->
+  <div id="lo">
+    <div id="ln-wrap"></div>
+    <div class="lsub" id="lsub">AI / ML ENGINEER &nbsp;·&nbsp; PRODUCTION SYSTEMS</div>
+    <div class="lb" id="lb">
+      <div class="lf" id="lf"></div>
+    </div>
+    <div class="lm" id="lm"></div>
+  </div>
+
+  <canvas id="c"></canvas>
+
+  <nav id="nav">
+    <a href="#" class="nl">V.G.</a>
+    <div class="ns"><span class="nd"></span>Available for Projects</div>
+  </nav>
+
+  <div id="dots">
+    <div class="dot on" data-i="0"></div>
+    <div class="dot" data-i="1"></div>
+    <div class="dot" data-i="2"></div>
+    <div class="dot" data-i="3"></div>
+    <div class="dot" data-i="4"></div>
+    <div class="dot" data-i="5"></div>
+    <div class="dot" data-i="6"></div>
+  </div>
+
+  <div id="sh">
+    <div class="sht">Scroll</div>
+    <div class="shl"></div>
+  </div>
+
+  <!-- UI CHAPTERS -->
+  <div id="ui">
+
+    <!-- 0: HERO -->
+    <div class="ch" id="c0">
+      <div class="ch-tag">AI/ML Engineer · Production Systems</div>
+      <div class="ch-h">I Build AI<br>That Works<br><em>While You Sleep.</em></div>
+      <p class="ch-p">Production engineer. Multiple continents.<br>One patent. Hackathon champion.</p>
+      <div style="margin-top:1.8rem;display:flex;align-items:center;gap:.8rem;">
+        <span
+          style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.22);letter-spacing:.2em;">SCROLL
+          TO ENTER</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.5">
+          <path d="M12 5v14M5 12l7 7 7-7" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- 1: WHO -->
+    <div class="ch" id="c1">
+      <div class="ch-tag">01 / Who</div>
+      <div class="ch-h">Based in<br>INDIA.<br><em>Built Global.</em></div>
+      <p class="ch-p">Production AI shipped to the <strong>United States, Africa, India and many more.</strong> Not
+        demos. Systems
+        that run at 3am without me. 21 years old. Hackathon #1. Indian Patent holder. Published researcher.</p>
+    </div>
+
+    <!-- 2: Brosa -->
+    <div class="wch" id="c2">
+      <div class="wn">CASE 01 / 03</div>
+      <div class="wc">Brosa</div>
+      <div class="wr">Ghana, Africa</div>
+      <div class="ws">They needed to serve thousands of customers — orders, bookings, support — <strong>without a
+          support team.</strong> I built an end-to-end WhatsApp AI platform. Fine-tuned LLMs for their domain.
+        Event-driven microservices relaying orders in real time. Zero data loss. <strong>It runs without me. That was
+          the point.</strong></div>
+      <div class="wm"><span class="mn" style="color:#22c55e">0</span><span class="ml">human agents<br>for routine
+          ops</span></div>
+    </div>
+
+    <!-- 3: Counsel AI -->
+    <div class="wch" id="c3">
+      <div class="wn">CASE 02 / 03</div>
+      <div class="wc">Counsel AI</div>
+      <div class="wr">Baltimore, USA</div>
+      <div class="ws">Their inference pipeline was expensive and slow. I rebuilt the stack. <strong>Distributed vector
+          retrieval. LoRA/PEFT fine-tuning. GPTQ quantisation.</strong> FastAPI on RunPod. Same output quality.
+        <strong>35% faster. Lower cost. Every day. Indefinitely.</strong>
+      </div>
+      <div class="wm"><span class="mn" style="color:#1d6fff">35%</span><span class="ml">inference latency<br>cut in
+          production</span></div>
+    </div>
+
+    <!-- 4: AngelOne -->
+    <div class="wch" id="c4">
+      <div class="wn">CASE 03 / 03</div>
+      <div class="wc">AngelOne</div>
+      <div class="wr">India</div>
+      <div class="ws">Thousands of content pieces — scripts, images, video — checked against SEBI/AMFI regulations
+        daily. Manually. I built <strong>Centura: multimodal AI, 7 automated stages.</strong> YOLO-VLM classification +
+        Pinecone retrieval. <strong>Compliance in minutes. Not days.</strong></div>
+      <div class="wm"><span class="mn" style="color:#a78bfa">60%</span><span class="ml">faster compliance<br>review
+          cycles</span></div>
+    </div>
+
+    <!-- 5: PROOF -->
+    <div class="pch" id="c5">
+      <div class="pg">
+        <div class="pc">
+          <div class="pb2" data-t="35" data-s="%">—</div>
+          <div class="pd">Inference<br>latency cut</div>
+        </div>
+        <div class="pc">
+          <div class="pb2" data-t="60" data-s="%">—</div>
+          <div class="pd">Compliance<br>speed up</div>
+        </div>
+        <div class="pc">
+          <div class="pb2" data-t="1" data-s="st">—</div>
+          <div class="pd">Hackathon<br>rank · 2025</div>
+        </div>
+        <div class="pc">
+          <div class="pb2" data-t="92" data-s="%">—</div>
+          <div class="pd">Annotation cost<br>reduction</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6: CTA -->
+    <div class="ctach" id="c6">
+      <div class="ctah">Tell Me<br><em>What's</em><br>Broken.</div>
+      <p class="ctas">I take on a small number of projects at a time. Every one gets my full attention.</p>
+      <div class="ctabtns">
+        <a href="mailto:vanshgautam2005@gmail.com" class="bs">Send Email</a>
+        <a href="https://linkedin.com/in/vanshgautam" target="_blank" class="bg">LinkedIn</a>
+        <a href="https://github.com/vanshgautam" target="_blank" class="bg">GitHub</a>
+      </div>
+      <div class="cfoot">Freelance · Vansh Gautam · +91 78886 44721</div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ════════════════════════════════════════
+       CRITICAL: KILL SCROLL RESTORATION
+    ════════════════════════════════════════ */
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+
+    /* ════════════════════════════════════════
+       CURSOR
+    ════════════════════════════════════════ */
+    const CD = document.getElementById('cd'), CR = document.getElementById('cr')
+    let mx = 0, my = 0, cx = 0, cy = 0
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY })
+      ; (function tick() {
+        cx += (mx - cx) * .14; cy += (my - cy) * .14
+        CD.style.cssText = `left:${mx}px;top:${my}px;`
+        CR.style.cssText = `left:${cx}px;top:${cy}px;`
+        requestAnimationFrame(tick)
+      })()
+    document.querySelectorAll('a,button').forEach(el => {
+      el.addEventListener('mouseenter', () => { CR.style.width = CR.style.height = '52px' })
+      el.addEventListener('mouseleave', () => { CR.style.width = CR.style.height = '34px' })
+    })
+
+    /* ════════════════════════════════════════
+       THREE.JS
+    ════════════════════════════════════════ */
+    const canvas = document.getElementById('c')
+    const W = () => window.innerWidth, H = () => window.innerHeight
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas, antialias: true, alpha: false,
+      powerPreference: 'high-performance'
+    })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
+    renderer.setSize(W(), H())
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.0
+
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color(0x000005)
+    scene.fog = new THREE.FogExp2(0x000005, 0.014)
+
+    const camera = new THREE.PerspectiveCamera(70, W() / H(), 0.1, 600)
+    camera.position.set(0, 0, 40)
+
+    window.addEventListener('resize', () => {
+      camera.aspect = W() / H()
+      camera.updateProjectionMatrix()
+      renderer.setSize(W(), H())
+    })
+
+    /* ── Sprite texture helper ─────────────── */
+    function spriteTex(r = 255, g = 255, b = 255) {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 64
+      const x = cv.getContext('2d')
+      const gd = x.createRadialGradient(32, 32, 0, 32, 32, 32)
+      gd.addColorStop(0, `rgba(${r},${g},${b},1)`)
+      gd.addColorStop(.4, `rgba(${r},${g},${b},.4)`)
+      gd.addColorStop(1, `rgba(${r},${g},${b},0)`)
+      x.fillStyle = gd; x.fillRect(0, 0, 64, 64)
+      return new THREE.CanvasTexture(cv)
+    }
+    const wTex = spriteTex(), bTex = spriteTex(29, 111, 255), cTex = spriteTex(0, 200, 255), pTex = spriteTex(124, 58, 237)
+
+    /* ── STARS ─────────────────────────────── */
+    function mkStars(n, radius) {
+      const pos = new Float32Array(n * 3)
+      for (let i = 0; i < n; i++) {
+        const phi = Math.acos(-1 + 2 * Math.random()), th = Math.PI * 2 * Math.random()
+        const r = radius + Math.random() * 60
+        pos[i * 3] = r * Math.sin(phi) * Math.cos(th)
+        pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(th)
+        pos[i * 3 + 2] = r * Math.cos(phi)
+      }
+      const g = new THREE.BufferGeometry()
+      g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+      return new THREE.Points(g, new THREE.PointsMaterial({ size: .4, map: wTex, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending }))
+    }
+    scene.add(mkStars(4000, 130))
+
+    /* ── GRID FLOOR (gives real depth sense) ─ */
+    const gridHelper = new THREE.GridHelper(300, 60, 0x111122, 0x0a0a1a)
+    gridHelper.position.y = -18
+    gridHelper.material.opacity = .6
+    gridHelper.material.transparent = true
+    scene.add(gridHelper)
+
+    /* ══════════════════════════════
+       HERO GROUP (pushed to right+back)
+       x: +14  keeps it away from left text
+    ══════════════════════════════ */
+    const HG = new THREE.Group()
+    HG.position.set(14, 0, 0)
+    scene.add(HG)
+
+    // Neural particle sphere — RIGHT SIDE
+    const SCOUNT = 1800
+    const sPos = new Float32Array(SCOUNT * 3)
+    for (let i = 0; i < SCOUNT; i++) {
+      const phi = Math.acos(-1 + 2 * Math.random()), th = Math.PI * 2 * Math.random()
+      const r = 7 + Math.random() * 1.5
+      sPos[i * 3] = r * Math.sin(phi) * Math.cos(th)
+      sPos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(th)
+      sPos[i * 3 + 2] = r * Math.cos(phi)
+    }
+    const sGeo = new THREE.BufferGeometry()
+    sGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3))
+    const sMat = new THREE.PointsMaterial({ size: 1.2, map: cTex, transparent: true, opacity: .75, depthWrite: false, blending: THREE.AdditiveBlending })
+    const PSphere = new THREE.Points(sGeo, sMat)
+    HG.add(PSphere)
+
+    // Icosahedron wireframe — dimmer, transparent
+    const icoEdges = new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(8, 1))
+    const ICO = new THREE.LineSegments(icoEdges, new THREE.LineBasicMaterial({ color: 0x1d6fff, transparent: true, opacity: .18 }))
+    HG.add(ICO)
+
+    // Torus knot — bottom right
+    const tkEdges = new THREE.EdgesGeometry(new THREE.TorusKnotGeometry(3.5, .4, 96, 12, 2, 3))
+    const TK = new THREE.LineSegments(tkEdges, new THREE.LineBasicMaterial({ color: 0x7c3aed, transparent: true, opacity: .22 }))
+    TK.position.set(8, -6, -4)
+    HG.add(TK)
+
+    // Orbiting dots
+    const OG = new THREE.Group()
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2
+      const sm = new THREE.Mesh(new THREE.SphereGeometry(.28, 8, 8), new THREE.MeshStandardMaterial({ color: 0x00c8ff, emissive: 0x00c8ff, emissiveIntensity: 2, transparent: true, opacity: .9 }))
+      sm.position.set(Math.cos(a) * 8.5, Math.sin(a) * 3.5, Math.sin(a * 2) * 2)
+      OG.add(sm)
+    }
+    HG.add(OG)
+
+    /* ══════════════════════════════
+       ABOUT GROUP — continent orbs
+       Pushed far right + back
+    ══════════════════════════════ */
+    const AG = new THREE.Group()
+    AG.position.set(0, 0, -35)
+    scene.add(AG)
+
+    const CONTS = [
+      { p: [12, 4, -2], c: 0xff6b35 }, { p: [-10, 3, -6], c: 0x1d6fff }, { p: [1, -5, -8], c: 0x22c55e }
+    ]
+    const CMSHS = []
+    CONTS.forEach(({ p, c }) => {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32),
+        new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: .7, metalness: .4, roughness: .3 }))
+      m.position.set(...p); AG.add(m); CMSHS.push(m)
+      // Halo ring
+      const rng = new THREE.Mesh(new THREE.TorusGeometry(2.4, .05, 8, 64),
+        new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .35 }))
+      rng.position.set(...p); rng.rotation.x = Math.PI / 2; AG.add(rng)
+    })
+      // Beams
+      ;[[0, 1], [1, 2], [0, 2]].forEach(function (pair) {
+        var a = pair[0], b = pair[1]
+        var pts = [new THREE.Vector3(CONTS[a].p[0], CONTS[a].p[1], CONTS[a].p[2]),
+        new THREE.Vector3(CONTS[b].p[0], CONTS[b].p[1], CONTS[b].p[2])]
+        AG.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+          new THREE.LineBasicMaterial({ color: 0x7c3aed, transparent: true, opacity: .25 })))
+      })
+
+    /* ══════════════════════════════
+       WORK PORTALS
+    ══════════════════════════════ */
+    const WG = new THREE.Group()
+    scene.add(WG)
+    const PCOLS = [0x22c55e, 0x1d6fff, 0x7c3aed]
+    const PORTALS = []
+      ;[-60, -82, -104].forEach((z, i) => {
+        const g = new THREE.Group(); g.position.z = z
+        const c = PCOLS[i]
+        // Outer ring
+        g.add(new THREE.Mesh(new THREE.TorusGeometry(10, .09, 8, 128),
+          new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .7 })))
+        // Middle ring
+        g.add(new THREE.Mesh(new THREE.TorusGeometry(7, .05, 8, 128),
+          new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .3 })))
+        // Glow plane
+        g.add(new THREE.Mesh(new THREE.PlaneGeometry(20, 20),
+          new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .03, side: THREE.DoubleSide })))
+        // Particle ring
+        const pp = new Float32Array(150 * 3)
+        for (let j = 0; j < 150; j++) {
+          const a = (j / 150) * Math.PI * 2 + Math.random() * .5
+          const r = 10 + (Math.random() - .5) * 1.5
+          pp[j * 3] = Math.cos(a) * r; pp[j * 3 + 1] = Math.sin(a) * r; pp[j * 3 + 2] = (Math.random() - .5) * .8
+        }
+        const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3))
+        const tex = i === 0 ? bTex : i === 1 ? bTex : pTex
+        g.add(new THREE.Points(pg, new THREE.PointsMaterial({ size: 1.3, color: c, transparent: true, opacity: .6, blending: THREE.AdditiveBlending, depthWrite: false })))
+        WG.add(g); PORTALS.push(g)
+      })
+
+    /* ══════════════════════════════
+       PROOF — floating crystals
+    ══════════════════════════════ */
+    const PG = new THREE.Group(); PG.position.z = -128; scene.add(PG)
+      ;[0x1d6fff, 0x22c55e, 0xf59e0b, 0x7c3aed].forEach((c, i) => {
+        const x = [-15, -5, 5, 15][i]
+        const oct = new THREE.Mesh(new THREE.OctahedronGeometry(2.2, 0),
+          new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: .6, wireframe: true }))
+        oct.position.set(x, 0, 0); PG.add(oct)
+        const tor = new THREE.Mesh(new THREE.TorusGeometry(3.5, .04, 8, 64),
+          new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .25 }))
+        tor.position.set(x, 0, 0); tor.rotation.x = Math.PI / 3; PG.add(tor)
+      })
+
+    /* ══════════════════════════════
+       CTA — distant glowing sun
+    ══════════════════════════════ */
+    const CG = new THREE.Group(); CG.position.z = -165; scene.add(CG)
+    const SUN = new THREE.Mesh(new THREE.SphereGeometry(14, 64, 64),
+      new THREE.MeshStandardMaterial({ color: 0x1d6fff, emissive: 0x0055ff, emissiveIntensity: 1.3, roughness: .2, metalness: .9 }))
+    CG.add(SUN)
+      ;[20, 25, 32].forEach((r, i) => {
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(r, .07, 8, 128),
+          new THREE.MeshBasicMaterial({ color: 0x1d6fff, transparent: true, opacity: .12 - i * .03 }))
+        ring.rotation.x = Math.PI / 2 + i * .3; CG.add(ring)
+      })
+    // CTA particles
+    const cp = new Float32Array(500 * 3)
+    for (let i = 0; i < 500; i++) {
+      const a = Math.random() * Math.PI * 2, r = 22 + Math.random() * 28
+      cp[i * 3] = Math.cos(a) * r; cp[i * 3 + 1] = (Math.random() - .5) * 20; cp[i * 3 + 2] = Math.sin(a) * r
+    }
+    const cpg = new THREE.BufferGeometry(); cpg.setAttribute('position', new THREE.BufferAttribute(cp, 3))
+    CG.add(new THREE.Points(cpg, new THREE.PointsMaterial({ size: .9, map: bTex, transparent: true, opacity: .45, blending: THREE.AdditiveBlending, depthWrite: false })))
+
+    /* ════════════════════════════════════════
+       LIGHTS
+    ════════════════════════════════════════ */
+    scene.add(new THREE.AmbientLight(0xffffff, .25))
+    const BL = new THREE.PointLight(0x1d6fff, 3, 60); BL.position.set(8, 10, 20); scene.add(BL)
+    const PL = new THREE.PointLight(0x7c3aed, 2, 50); PL.position.set(-12, -6, 12); scene.add(PL)
+    const CL = new THREE.PointLight(0x00c8ff, 2, 40); CL.position.set(0, 8, 25); scene.add(CL)
+    const ML = new THREE.PointLight(0xffffff, .6, 25); scene.add(ML)
+
+    /* ════════════════════════════════════════
+       CAMERA SPLINE PATH
+    ════════════════════════════════════════ */
+    const CAM_PATH = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0, 40),
+      new THREE.Vector3(-2, 1.5, 22),
+      new THREE.Vector3(2, -1, -8),
+      new THREE.Vector3(0, 0, -48),
+      new THREE.Vector3(-2, 1, -70),
+      new THREE.Vector3(2, -1, -92),
+      new THREE.Vector3(0, 0, -115),
+      new THREE.Vector3(0, 1.5, -135),
+      new THREE.Vector3(0, 0, -158),
+    ], false, 'catmullrom', .5)
+
+    const LOOK_PATH = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(-1, .5, -18),
+      new THREE.Vector3(1, -.5, -35),
+      new THREE.Vector3(0, .5, -62),
+      new THREE.Vector3(-1, 0, -84),
+      new THREE.Vector3(1, -.5, -106),
+      new THREE.Vector3(0, 1, -125),
+      new THREE.Vector3(0, 0, -145),
+      new THREE.Vector3(0, 0, -185),
+    ], false, 'catmullrom', .5)
+
+    /* ════════════════════════════════════════
+       SCROLL STATE
+       Use RAF-based smooth scroll for buttery feel
+    ════════════════════════════════════════ */
+    let scrollY = 0, smoothY = 0, prog = 0, prevProg = -1
+    let mouseX = 0, mouseY = 0
+
+    // Always reset on load
+    window.scrollTo(0, 0)
+    window.addEventListener('scroll', () => { scrollY = window.scrollY }, { passive: true })
+    document.addEventListener('mousemove', e => {
+      mouseX = (e.clientX / window.innerWidth - .5) * 2
+      mouseY = (e.clientY / window.innerHeight - .5) * 2
+    })
+
+    // Lerped camera vectors
+    const camPos = new THREE.Vector3(), camLook = new THREE.Vector3()
+    const tPos = new THREE.Vector3(), tLook = new THREE.Vector3()
+
+    /* ════════════════════════════════════════
+       CHAPTERS
+    ════════════════════════════════════════ */
+    const CHS = ['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6'].map(id => document.getElementById(id))
+    const DOTS = document.querySelectorAll('.dot')
+    let activeCh = -1, countersRun = false
+
+    function showCh(i) {
+      if (i === activeCh) return
+      activeCh = i
+      CHS.forEach((el, j) => gsap.to(el, { opacity: j === i ? 1 : 0, duration: .55, ease: 'power2.inOut' }))
+      DOTS.forEach((d, j) => d.classList.toggle('on', j === i))
+      if (i === 5 && !countersRun) { countersRun = true; runCounters() }
+    }
+
+    function runCounters() {
+      document.querySelectorAll('[data-t]').forEach(el => {
+        const t = +el.dataset.t, s = el.dataset.s
+        gsap.to({ v: 0 }, {
+          v: t, duration: 2.2, ease: 'power3.out',
+          onUpdate() { el.textContent = Math.ceil(this.targets()[0].v) + s }
+        })
+      })
+    }
+
+    const pbar = document.getElementById('pb')
+
+    /* ════════════════════════════════════════
+       MAIN RENDER LOOP
+       High-performance: delta-based time,
+       minimal per-frame allocations
+    ════════════════════════════════════════ */
+    let then = 0, phi = 0
+    function render(now) {
+      requestAnimationFrame(render)
+      const dt = Math.min((now - then) * .001, .05); then = now
+      phi += dt
+
+      /* Smooth scroll — lerp factor .1 gives silky feel without lag */
+      smoothY += (scrollY - smoothY) * .1
+      const maxSc = document.body.scrollHeight - window.innerHeight
+      prog = maxSc > 0 ? Math.max(0, Math.min(1, smoothY / maxSc)) : 0
+      pbar.style.width = (prog * 100) + '%'
+
+      /* Camera from spline */
+      CAM_PATH.getPoint(prog, tPos)
+      LOOK_PATH.getPoint(prog, tLook)
+      tPos.x += mouseX * 2.5
+      tPos.y -= mouseY * 1.8
+      camPos.lerp(tPos, .06)
+      camLook.lerp(tLook, .06)
+      camera.position.copy(camPos)
+      camera.lookAt(camLook)
+
+      /* Mouse light */
+      ML.position.set(mouseX * 12, -mouseY * 8, camPos.z - 4)
+
+      /* HERO */
+      PSphere.rotation.y = phi * .25
+      PSphere.rotation.x = phi * .08
+      sMat.opacity = .6 + Math.sin(phi * 1.8) * .15
+      ICO.rotation.x = phi * .12
+      ICO.rotation.y = phi * .18
+      TK.rotation.x = phi * .22
+      TK.rotation.z = phi * .15
+      OG.rotation.y = phi * .55
+      OG.rotation.z = phi * .18
+
+      /* Continent orbs */
+      CMSHS.forEach((m, i) => {
+        m.scale.setScalar(1 + Math.sin(phi * 1.4 + i * 2.1) * .07)
+        m.material.emissiveIntensity = .5 + Math.sin(phi * .9 + i) * .3
+      })
+      AG.rotation.y = phi * .04
+
+      /* Portal rings */
+      PORTALS.forEach((p, i) => {
+        p.rotation.z = phi * .28 * (i % 2 === 0 ? 1 : -1)
+      })
+
+      /* Proof crystals float */
+      PG.children.forEach((m, i) => {
+        m.position.y = Math.sin(phi * .7 + i * .8) * .9
+        if (m.type === 'Mesh') m.rotation.y = phi * .5
+      })
+
+      /* CTA sun pulse */
+      SUN.rotation.y = phi * .08
+      SUN.material.emissiveIntensity = .9 + Math.sin(phi * 1.1) * .35
+      CG.children.forEach((m, i) => { if (i > 0 && i < 4) m.rotation.z = phi * .06 * (i + 1) })
+
+      /* Chapter switch thresholds */
+      if (prog < .08) showCh(0)
+      else if (prog < .21) showCh(1)
+      else if (prog < .37) showCh(2)
+      else if (prog < .54) showCh(3)
+      else if (prog < .67) showCh(4)
+      else if (prog < .83) showCh(5)
+      else showCh(6)
+
+      renderer.render(scene, camera)
+    }
+
+    /* ════════════════════════════════════════
+       LOADER → START
+    ════════════════════════════════════════ */
+    window.addEventListener('load', () => {
+      window.scrollTo(0, 0); scrollY = 0; smoothY = 0
+
+      // Split "VANSH GAUTAM" into animated letter spans
+      const wrap = document.getElementById('ln-wrap')
+      'VANSH GAUTAM'.split('').forEach(ch => {
+        const span = document.createElement('span')
+        span.className = ch === ' ' ? 'lspace' : 'lchar'
+        span.textContent = ch === ' ' ? '' : ch
+        wrap.appendChild(span)
+      })
+
+      // Three-phase message sequence
+      const MSGS = [
+        'INITIALIZING SYSTEMS',
+        'MULTIPLE CONTINENTS · 1 ENGINEER',
+        'HACKATHON WINNER · INDIAN PATENT HOLDER',
+      ]
+
+      const tl = gsap.timeline({ onComplete: start })
+
+      // Phase 1 — name letters stagger in
+      tl.to('.lchar', { opacity: 1, y: 0, duration: .05, stagger: .06, delay: .4, ease: 'power2.out' })
+
+      // Phase 2 — subtitle fades in
+      tl.to('#lsub', { opacity: 1, duration: .6, ease: 'power2.out' }, '-=.1')
+
+      // Phase 3 — progress bar + message cycling
+      tl.to('#lb', { opacity: 1, duration: .3 }, '+=.3')
+      tl.to('#lf', { width: '100%', duration: 3.6, ease: 'power1.inOut' }, '<')  // bar runs through all messages
+
+      MSGS.forEach((msg, i) => {
+        if (i === 0) {
+          tl.set('#lm', { textContent: msg })
+          tl.to('#lm', { opacity: 1, duration: .35 })
+        } else {
+          tl.to('#lm', { opacity: 0, duration: .25 }, `+=.95`)
+          tl.set('#lm', { textContent: msg })
+          tl.to('#lm', { opacity: 1, duration: .3 })
+        }
+      })
+
+      // Phase 4 — "SYSTEM READY" then fade out
+      tl.to('#lm', { opacity: 0, duration: .25 }, '+=.95')
+      tl.set('#lm', { textContent: 'SYSTEM READY' })
+      tl.to('#lm', { opacity: .7, duration: .35, ease: 'power2.out' })
+      tl.to('.lchar', { opacity: 0, y: -20, duration: .04, stagger: .03 }, '+=.5')
+      tl.to(['#lsub', '#lm', '#lb'], { opacity: 0, duration: .4 }, '<+=.1')
+      tl.to('#lo', { opacity: 0, duration: .9, ease: 'power2.in' }, '+=.1')
+      tl.set('#lo', { display: 'none' })
+    })
+
+    function start() {
+      // Reset scroll one final time
+      window.scrollTo(0, 0); scrollY = 0; smoothY = 0; prog = 0
+      then = performance.now()
+      render(then)
+      gsap.to('#nav', { opacity: 1, duration: .7 })
+      gsap.to('#dots', { opacity: 1, duration: .7, delay: .3 })
+      gsap.to('#sh', { opacity: 1, duration: .7, delay: .6 })
+      gsap.to('#c0', { opacity: 1, duration: .9, delay: .2 })
+      activeCh = 0
+    }
+
+    // Hide scroll hint on first scroll
+    window.addEventListener('scroll', () => gsap.to('#sh', { opacity: 0, duration: .4 }), { once: true })
+
+    // Dot navigation
+    document.querySelectorAll('.dot').forEach(d => {
+      d.addEventListener('click', () => {
+        const idx = +d.dataset.i, maxSc = document.body.scrollHeight - window.innerHeight
+        window.scrollTo({ top: (idx / 6) * maxSc, behavior: 'smooth' })
+      })
+    })
+  </script>
+</body>
+
+</html>
