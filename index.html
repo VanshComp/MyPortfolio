@@ -379,9 +379,10 @@
     .wn {
       font-family: 'JetBrains Mono', monospace;
       font-size: .65rem;
-      color: rgba(255, 255, 255, .2);
+      color: rgba(255, 255, 255, .5);
       letter-spacing: .3em;
       margin-bottom: .9rem;
+      text-shadow: 0 0 20px rgba(0, 0, 0, .9);
     }
 
     .wc {
@@ -391,27 +392,31 @@
       letter-spacing: -.03em;
       color: #f0eeea;
       margin-bottom: .4rem;
+      text-shadow: 0 2px 40px rgba(0, 0, 0, .9);
     }
 
     .wr {
       font-family: 'JetBrains Mono', monospace;
       font-size: .65rem;
-      color: rgba(255, 255, 255, .25);
+      color: rgba(255, 255, 255, .55);
       letter-spacing: .18em;
       margin-bottom: 1.8rem;
+      text-shadow: 0 0 20px rgba(0, 0, 0, .9);
     }
 
     .ws {
       font-size: clamp(.9rem, 1.5vw, 1.1rem);
-      color: rgba(255, 255, 255, .48);
+      color: rgba(255, 255, 255, .85);
       line-height: 1.82;
-      max-width: 600px;
+      max-width: 580px;
       font-weight: 300;
+      text-shadow: 0 1px 12px rgba(0, 0, 0, .95), 0 0 40px rgba(0, 0, 0, .8);
     }
 
     .ws strong {
-      color: rgba(255, 255, 255, .8);
+      color: #f0eeea;
       font-weight: 600;
+      text-shadow: 0 1px 12px rgba(0, 0, 0, .95);
     }
 
     .wm {
@@ -419,11 +424,11 @@
       align-items: center;
       gap: 12px;
       margin-top: 2rem;
-      padding: 11px 22px;
-      border: 1px solid rgba(255, 255, 255, .1);
+      padding: 11px 26px;
+      border: 1px solid rgba(255, 255, 255, .16);
       border-radius: 100px;
-      background: rgba(255, 255, 255, .03);
-      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, .07);
+      backdrop-filter: blur(16px);
     }
 
     .mn {
@@ -435,7 +440,7 @@
 
     .ml {
       font-size: .75rem;
-      color: rgba(255, 255, 255, .35);
+      color: rgba(255, 255, 255, .55);
       line-height: 1.3;
       text-align: left;
     }
@@ -1126,10 +1131,89 @@
       tl.set('#lo', { display: 'none' })
     })
 
+    /* ════════════════════════════════════════
+       ANIMATED FAVICON
+       Three dots orbit a pulsing glow core.
+       Runs at 20fps — enough for a favicon.
+    ════════════════════════════════════════ */
+    function initFavicon() {
+      const fc = document.createElement('canvas')
+      fc.width = fc.height = 64
+      const fx = fc.getContext('2d')
+      const fl = document.createElement('link')
+      fl.rel = 'icon'; fl.type = 'image/png'
+      document.head.appendChild(fl)
+
+      const DOTS = [
+        { color: '#00c8ff', size: 3.5 },
+        { color: '#7c3aed', size: 2.8 },
+        { color: '#1d6fff', size: 2.2 },
+      ]
+      let ft = 0
+
+      setInterval(() => {
+        ft += 0.08
+        fx.clearRect(0, 0, 64, 64)
+
+        // Dark background
+        fx.fillStyle = '#000008'
+        fx.fillRect(0, 0, 64, 64)
+
+        const pulse = Math.sin(ft) * 0.5 + 0.5
+
+        // Outer ring — breathes with pulse
+        fx.beginPath()
+        fx.arc(32, 32, 28, 0, Math.PI * 2)
+        fx.strokeStyle = `rgba(29, 111, 255, ${0.12 + pulse * 0.28})`
+        fx.lineWidth = 1
+        fx.stroke()
+
+        // Middle ring
+        fx.beginPath()
+        fx.arc(32, 32, 19, 0, Math.PI * 2)
+        fx.strokeStyle = `rgba(124, 58, 237, ${0.18 + pulse * 0.22})`
+        fx.lineWidth = 1
+        fx.stroke()
+
+        // Center glow
+        const g = fx.createRadialGradient(32, 32, 0, 32, 32, 14)
+        g.addColorStop(0, `rgba(0, 200, 255, ${0.85 + pulse * 0.15})`)
+        g.addColorStop(0.45, `rgba(29, 111, 255, 0.65)`)
+        g.addColorStop(1, 'rgba(29, 111, 255, 0)')
+        fx.beginPath()
+        fx.arc(32, 32, 14, 0, Math.PI * 2)
+        fx.fillStyle = g
+        fx.fill()
+
+        // Three orbiting dots — 120° apart
+        DOTS.forEach(({ color, size }, i) => {
+          const a = ft * 1.6 + (i * Math.PI * 2 / 3)
+          const x = 32 + Math.cos(a) * 22
+          const y = 32 + Math.sin(a) * 22
+          // Glow halo behind dot
+          const dg = fx.createRadialGradient(x, y, 0, x, y, size * 2.5)
+          dg.addColorStop(0, color)
+          dg.addColorStop(1, 'rgba(0,0,0,0)')
+          fx.beginPath()
+          fx.arc(x, y, size * 2.5, 0, Math.PI * 2)
+          fx.fillStyle = dg
+          fx.fill()
+          // Solid dot
+          fx.beginPath()
+          fx.arc(x, y, size, 0, Math.PI * 2)
+          fx.fillStyle = color
+          fx.fill()
+        })
+
+        fl.href = fc.toDataURL('image/png')
+      }, 50) // 20fps
+    }
+
     function start() {
       window.scrollTo(0, 0); scrollY = 0; smoothY = 0; prog = 0
       lastRender = performance.now()
       render(lastRender)
+      initFavicon()
       gsap.to('#nav', { opacity: 1, duration: .7 })
       gsap.to('#dots', { opacity: 1, duration: .7, delay: .3 })
       gsap.to('#sh', { opacity: 1, duration: .7, delay: .6 })
